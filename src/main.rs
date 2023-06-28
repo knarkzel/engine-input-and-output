@@ -29,11 +29,6 @@ impl Engine {
         // Get function
         let function = self.instance.exports.get_function("main")?;
 
-        // Grow memory at heap for input
-        let memory = self.instance.exports.get_memory("memory")?;
-        let pages = (input.len() / wasmer::WASM_PAGE_SIZE) + 1;
-        memory.grow(&mut self.store, pages as u32)?;
-
         // Get heap start
         let heap_start = match self
             .instance
@@ -42,12 +37,17 @@ impl Engine {
             .map(|it| it.get(&mut self.store))
         {
             Ok(Value::I32(heap_start)) => heap_start,
-            _ => 0x100000,
+            _ => 0x110000,
         };
 
+        // Grow memory heap for input
+        let memory = self.instance.exports.get_memory("memory")?;
+        let pages = (input.len() / wasmer::WASM_PAGE_SIZE) + 1;
+        memory.grow(&mut self.store, pages as u32)?;
+
         // Write bytes into memory
-        let heap_bytes = (heap_start as u32).to_le_bytes();
-        let bytes = [&heap_bytes, input.as_bytes()].concat();
+        let input_len = (input.len() as u32).to_le_bytes();
+        let bytes = [&input_len, input.as_bytes()].concat();
         {
             let view = memory.view(&self.store);
             view.write(heap_start as u64, &bytes)?;
@@ -62,6 +62,6 @@ impl Engine {
 fn main() -> Result<()> {
     let file = std::env::args().skip(1).next().expect("No file was passed");
     let mut engine = Engine::new(&file)?;
-    engine.run("This is the input from runtime")?;
+    engine.run("This is the input from runtime!")?;
     Ok(())
 }
