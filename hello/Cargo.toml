@@ -11,3 +11,5 @@ strip = true
 crate-type = ["cdylib"]
 
 [dependencies]
+rmp-serde = "1.1.1"
+serde = { version = "1.0.164", features = ["derive"] }
